@@ -15,6 +15,7 @@ class RoomResource extends JsonResource
             'type' => $this->type,
             'capacity' => $this->capacity,
             'price_per_night' => (float) $this->price_per_night,
+            'converted_price' => $this->when($this->converted_price !== null, $this->converted_price),
         ];
     }
 }

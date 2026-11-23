@@ -1,58 +1,215 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Hotel Booking API
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+A REST API for searching hotels, checking room availability and managing bookings, built with **Laravel** and **PostgreSQL**.
 
-## About Laravel
+This is a learning project I built to practise backend development: designing a database, building REST endpoints, validating input, handling business rules, integrating an external API and writing automated tests.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## Tech Stack
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+- PHP 8.5 & Laravel 13
+- PostgreSQL
+- Pest (testing)
+- Laravel HTTP Client & Cache
+- Git & GitHub
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+## Features
 
-## Learning Laravel
+- List hotels and filter them by city
+- View a hotel with all of its rooms
+- Check if a room is available for specific dates
+- Create bookings with input validation and automatic price calculation
+- Prevent double bookings (overlapping dates for the same room)
+- Cancel bookings (a booking can only be cancelled once)
+- Convert room prices to other currencies using a live exchange rate API, with caching
+- Consistent JSON responses, including errors
+- Feature tests covering the main scenarios
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+## Getting Started
 
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+### Requirements
+- PHP 8.3+
+- Composer
+- PostgreSQL
 
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
-
-## Agentic Development
-
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+### Installation
 
 ```bash
-composer require laravel/boost --dev
-
-php artisan boost:install
+git clone https://github.com/EvaGroz/hotel-booking-api.git
+cd hotel-booking-api
+composer install
+cp .env.example .env        # on Windows: copy .env.example .env
+php artisan key:generate
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+Create a PostgreSQL database called `hotel_booking` and update `.env`:
 
-## Contributing
+```env
+DB_CONNECTION=pgsql
+DB_HOST=127.0.0.1
+DB_PORT=5432
+DB_DATABASE=hotel_booking
+DB_USERNAME=postgres
+DB_PASSWORD=your_password
+```
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+Run the migrations with sample data and start the server:
 
-## Code of Conduct
+```bash
+php artisan migrate --seed
+php artisan serve
+```
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+The API is now available at `http://127.0.0.1:8000/api`.
 
-## Security Vulnerabilities
+## API Endpoints
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/api/hotels` | List all hotels (optional `?city=Ohrid`) |
+| GET | `/api/hotels/{id}` | Show a hotel with its rooms (optional `?currency=USD` for converted prices) |
+| GET | `/api/rooms/{id}/availability?check_in=YYYY-MM-DD&check_out=YYYY-MM-DD` | Check room availability |
+| POST | `/api/bookings` | Create a booking |
+| GET | `/api/bookings/{id}` | Show a booking |
+| PATCH | `/api/bookings/{id}/cancel` | Cancel a booking |
 
-## License
+### Example: create a booking
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+**Request** `POST /api/bookings`
+```json
+{
+  "room_id": 2,
+  "guest_name": "Jane Doe",
+  "guest_email": "jane@example.com",
+  "check_in": "2026-12-10",
+  "check_out": "2026-12-13"
+}
+```
+
+**Response** `201 Created`
+```json
+{
+  "data": {
+    "id": 2,
+    "status": "confirmed",
+    "guest_name": "Jane Doe",
+    "guest_email": "jane@example.com",
+    "check_in": "2026-12-10",
+    "check_out": "2026-12-13",
+    "nights": 3,
+    "total_price": 210,
+    "hotel": "Hotel Vardar",
+    "room": {
+      "id": 2,
+      "room_number": "102",
+      "type": "double",
+      "capacity": 2,
+      "price_per_night": 70
+    }
+  }
+}
+```
+
+### Example: prices in another currency
+
+**Request** `GET /api/hotels/1?currency=USD`
+```json
+{
+  "data": {
+    "id": 1,
+    "name": "Hotel Vardar",
+    "rooms": [
+      {
+        "id": 1,
+        "room_number": "101",
+        "type": "single",
+        "capacity": 1,
+        "price_per_night": 45,
+        "converted_price": {
+          "currency": "USD",
+          "amount": 49.46
+        }
+      }
+    ]
+  }
+}
+```
+
+### Status codes
+
+| Code | Meaning |
+|---|---|
+| `200` | Success |
+| `201` | Booking created |
+| `404` | Resource not found |
+| `409` | Room is not available for the selected dates |
+| `422` | Validation error or booking already cancelled |
+| `503` | Exchange rate service is unavailable |
+
+Ready-to-use example requests are in [`requests.http`](requests.http) (works with the VS Code REST Client extension).
+
+## Business Rules
+
+- Check-in cannot be in the past, and check-out must be after check-in.
+- Two bookings overlap when one starts before the other ends. Overlapping confirmed bookings for the same room are rejected with `409`.
+- Cancelled bookings do not block the room.
+- Total price = number of nights × room price per night.
+- All prices are stored in EUR.
+
+## External Integration
+
+When `?currency=` is provided, `CurrencyService` fetches the exchange rate from the [Frankfurter API](https://frankfurter.dev) (European Central Bank rates, no API key needed).
+
+- The logic lives in a separate service class and is injected into the controller.
+- Rates are cached for 1 hour to avoid unnecessary API calls.
+- If the external service fails or times out, the API returns `503` instead of crashing.
+- Only supported currency codes are accepted (for example `USD`, `GBP`, `CHF`).
+- Tests use `Http::fake()`, so they never call the real API.
+
+## Running Tests
+
+Create a separate database called `hotel_booking_test` (configured in `phpunit.xml`), then run:
+
+```bash
+php artisan test
+```
+
+Tests cover listing and filtering hotels, creating bookings, price calculation, double-booking prevention, validation, availability checks, cancellation and currency conversion (including caching and external API failures).
+
+## Project Structure
+
+```
+app/
+├── Http/
+│   ├── Controllers/Api/   # HotelController, RoomController, BookingController
+│   ├── Requests/          # StoreBookingRequest (validation)
+│   └── Resources/         # JSON response formatting
+├── Models/                # Hotel, Room, Booking + relationships
+└── Services/              # CurrencyService (external API integration)
+database/
+├── migrations/            # Database tables
+└── seeders/               # Sample data
+routes/api.php             # API routes
+tests/Feature/             # Pest tests
+```
+
+## How I Used AI
+
+I used an AI assistant (Claude) as a mentor that guided me through the project step by step.
+
+- **Guidance:** AI helped me plan the order of the work, discusse the database design and which endpoints the API needs.
+- **Learning:** I asked for explanations of Laravel concepts (migrations, Form Requests, API Resources, dependency injection, HTTP fakes) so I understood them before using them.
+- **Debugging:** when I hit errors (a PHP syntax error, a web server port conflict on Windows, a seeder that was not running), I used AI to understand the cause and fixed them myself.
+- **Testing:** AI helped me by suggesting test scenarios and think of edge cases such as overlapping dates, cancelled bookings and an unavailable external API.
+
+I did the work myself: I set up the environment and the database, built the project step by step, tested every endpoint manually and with automated tests, committed my progress to GitHub along the way, and made sure I understand the concept and how each part works asking AI.
+
+## What I Would Add Next
+
+- Authentication with Laravel Sanctum
+- Pagination and more search filters (dates, price, number of guests)
+- Docker setup
+- CI pipeline with GitHub Actions to run tests on every push
+
+## Author
+
+**Eva Groz**: [GitHub](https://github.com/EvaGroz)

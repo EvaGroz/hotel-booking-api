@@ -49,3 +49,8 @@ Accept: application/json
 ### 6. Cancel booking
 PATCH {{baseUrl}}/bookings/1/cancel
 Accept: application/json
+
+
+### 7. Hotel with prices converted to USD
+GET {{baseUrl}}/hotels/1?currency=USD
+Accept: application/json
