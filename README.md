@@ -212,4 +212,4 @@ I did the work myself: I set up the environment and the database, built the proj
 
 ## Author
 
-**Eva Groz**: [GitHub](https://github.com/EvaGroz)
+**Eva Grozdanoska**: [GitHub](https://github.com/EvaGroz)
