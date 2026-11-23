@@ -1,0 +1,51 @@
+@baseUrl = http://127.0.0.1:8000/api
+
+### 1. Is room 1 available? (should be false, John Smith has it)
+GET {{baseUrl}}/rooms/1/availability?check_in=2026-11-29&check_out=2026-12-02
+Accept: application/json
+
+### 2. Create booking - success (201)
+POST {{baseUrl}}/bookings
+Content-Type: application/json
+Accept: application/json
+
+{
+  "room_id": 2,
+  "guest_name": "Jane Doe",
+  "guest_email": "jane@example.com",
+  "check_in": "2026-12-10",
+  "check_out": "2026-12-13"
+}
+
+### 3. Create booking - room already taken (409)
+POST {{baseUrl}}/bookings
+Content-Type: application/json
+Accept: application/json
+
+{
+  "room_id": 1,
+  "guest_name": "Mark Lee",
+  "guest_email": "mark@example.com",
+  "check_in": "2026-11-29",
+  "check_out": "2026-12-02"
+}
+
+### 4. Create booking - validation errors (422)
+POST {{baseUrl}}/bookings
+Content-Type: application/json
+Accept: application/json
+
+{
+  "room_id": 999,
+  "guest_email": "not-an-email",
+  "check_in": "2026-12-10",
+  "check_out": "2026-12-05"
+}
+
+### 5. Show booking
+GET {{baseUrl}}/bookings/1
+Accept: application/json
+
+### 6. Cancel booking
+PATCH {{baseUrl}}/bookings/1/cancel
+Accept: application/json

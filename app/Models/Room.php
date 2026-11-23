@@ -37,4 +37,14 @@ class Room extends Model
     {
         return $this->hasMany(Booking::class);
     }
+
+    // Собата е слободна ако нема потврдена резервација што се преклопува со датумите
+    public function isAvailable(string $checkIn, string $checkOut): bool
+    {
+        return ! $this->bookings()
+            ->where('status', 'confirmed')
+            ->where('check_in', '<', $checkOut)
+            ->where('check_out', '>', $checkIn)
+            ->exists();
+    }
 }
